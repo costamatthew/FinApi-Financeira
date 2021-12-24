@@ -1,3 +1,4 @@
+const { request } = require('express')
 const express = require('express')
 const {v4: uuidv4} = require('uuid')
 
@@ -7,6 +8,21 @@ app.use(express.json())
 
 const customers = []
 
+// Middleware
+function verifyExistsAccountCPF(resquest, response, next) {
+    const { cpf } = resquest.headers
+
+    const customer = customers.find(customer => customer.cpf === cpf)
+
+    if(!customer) {
+        return response.status(400).json({ error: 'Customer not found!'})
+    }
+
+    request.customer = customer
+
+    return next()
+}
+
 /**
  * cpf - string
  * name - string
@@ -14,8 +30,8 @@ const customers = []
  * statement - []
  */
 
-app.post('/account', (request, response) => {
-    const { cpf, name } = request.body
+app.post('/account', (resquest, response) => {
+    const { cpf, name } = resquest.body
 
     const customerAlreadyExists = customers.some(
         (customer) => customer.cpf === cpf
@@ -35,14 +51,10 @@ app.post('/account', (request, response) => {
     return response.status(201).send()
 })
 
-app.get('/statement', (request, response) => {
-    const { cpf } = request.headers
+// app.use(verifyExistsAccountCPF)
 
-    const customer = customers.find(customer => customer.cpf === cpf)
-
-    if(!customer) {
-        return response.status(404).json({ error: 'Customer not found!'})
-    }
+app.get('/statement', verifyExistsAccountCPF, (resquest, response) => {
+    const { customer } = resquest
 
     return response.status(200).json(customer.statement)
 })
