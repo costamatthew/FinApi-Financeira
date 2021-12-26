@@ -42,6 +42,8 @@ function getBalance(statement) {
  * statement - []
  */
 
+// app.use(verifyExistsAccountCPF) -> outra maneira de usar um Middleware
+
 app.post('/account', (resquest, response) => {
     const { cpf, name } = resquest.body
 
@@ -63,18 +65,16 @@ app.post('/account', (resquest, response) => {
     return response.status(201).send()
 })
 
-// app.use(verifyExistsAccountCPF)
-
-app.get('/statement', verifyExistsAccountCPF, (resquest, response) => {
-    const { customer } = resquest
+app.get('/statement', verifyExistsAccountCPF, (request, response) => {
+    const { customer } = request
 
     return response.status(200).json(customer.statement)
 })
 
-app.post('/deposit', verifyExistsAccountCPF, (resquest, response) => {
-    const { description, amount } = resquest.body
+app.post('/deposit', verifyExistsAccountCPF, (request, response) => {
+    const { description, amount } = request.body
 
-    const { customer } = resquest
+    const { customer } = request
 
     const statementOperations = {
         description,
@@ -88,9 +88,9 @@ app.post('/deposit', verifyExistsAccountCPF, (resquest, response) => {
     return response.status(201).send()
 })
 
-app.post('/withdraw', verifyExistsAccountCPF, (resquest, response) => {
-    const { amount } = resquest.body
-    const { customer } = resquest
+app.post('/withdraw', verifyExistsAccountCPF, (request, response) => {
+    const { amount } = request.body
+    const { customer } = request
 
     const balance = getBalance(customer.statement)
 
@@ -107,6 +107,20 @@ app.post('/withdraw', verifyExistsAccountCPF, (resquest, response) => {
     customer.statement.push(statementOperations)
 
     return response.status(201).send()
+})
+
+app.get('/statement/date', verifyExistsAccountCPF, (request, response) => {
+    const { customer } = request
+    const { date } = request.query
+
+    const dateFormat = new Date(date + ' 00:00')
+
+    const statement = customer.statement.filter((statement) => (
+        statement.create_at.toDateString() ===
+        new Date(dateFormat).toDateString()
+    ))
+    
+    return response.json(statement)
 })
 
 app.listen(3333)
